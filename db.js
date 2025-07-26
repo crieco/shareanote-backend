@@ -1,20 +1,36 @@
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = process.env.MONGO_URI;
 
-const uri = process.env.MONGODB_URI || 'your-mongodb-uri-here';
 const client = new MongoClient(uri, {
-  serverApi: ServerApiVersion.v1,
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true
+  }
 });
 
 let db;
 
-async function connectToMongo() {
-  await client.connect();
-  db = client.db('shareanote');
-  console.log('✅ Connected to MongoDB');
+async function connectToDB() {
+  try {
+    await client.connect();
+    db = client.db('shareanote');
+    await db.command({ ping: 1 });
+    console.log('✅ Connected to MongoDB');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    throw err;
+  }
 }
 
-function getDb() {
+function getDB() {
+  if (!db) throw new Error('Database not connected');
   return db;
 }
 
-module.exports = { connectToMongo, getDb };
+async function closeDB() {
+  await client.close();
+  console.log('🔌 MongoDB connection closed');
+}
+
+module.exports = { connectToDB, getDB, closeDB };
