@@ -12,15 +12,10 @@ const Note = require('./note');
 const threats = require('./threatWords');
 const filter = new Filter();
 
-filter.addWords('ass', 'asshole', 'bitch', 'bastard', 'shit', 'fuck', 'fucking', 'damn', 'dick', 'cunt', 'pussy');
-
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGO_URI, {})
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
@@ -31,10 +26,12 @@ app.post('/notes', async (req, res) => {
   const lowerMessage = message.toLowerCase();
 
   if (filter.isProfane(message)) {
+    console.log('Blocked due to profanity:', message);
     return res.status(403).json({ status: 'rejected profanity' });
   }
 
-  if (threats.some(word => new RegExp(`\\b${word}\\b`, 'i').test(lowerMessage))) {
+  if (threats.some(word => lowerMessage.includes(word))) {
+    console.log('Blocked due to threat:', message);
     return res.status(403).json({ status: 'rejected threat' });
   }
 

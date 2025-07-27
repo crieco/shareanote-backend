@@ -1,12 +1,5 @@
 
 module.exports = [
-  'kill',
-  'murder',
-  'bomb',
-  'attack',
-  'explode',
-  'assassinate',
-  'threat',
-  'shoot',
-  'stab'
+  "kill", "bomb", "attack", "shoot", "explode", "threat", "murder", "assassinate",
+  "terrorist", "terrorism", "stab", "gun", "violence", "massacre", "die", "weapon"
 ];
