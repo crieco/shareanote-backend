@@ -1,6 +1,8 @@
+
 {
   "name": "shareanote-backend",
   "version": "1.0.0",
+  "description": "Backend for ShareANote",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
