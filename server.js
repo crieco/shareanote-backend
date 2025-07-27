@@ -11,14 +11,6 @@ const Note = require('./note');
 const threats = require('./threatWords');
 const filter = new Filter();
 
-// Add additional bad words
-filter.addWords(
-  'f***', 'f*ck', 'fuk', 'f u c k', 'fu*k',
-  'shit', 'sh*t', 's h i t',
-  'bitch', 'b*tch', 'b i t c h',
-  'kill', 'bomb', 'shoot', 'murder', 'explode'
-);
-
 app.use(cors());
 app.use(express.json());
 
@@ -44,9 +36,8 @@ app.post('/notes', async (req, res) => {
     return res.status(403).json({ status: 'rejected profanity' });
   }
 
-  const threatRegex = /\b(kill|bomb|explode|murder|shoot|stab|attack|terrorist|gun|violence)\b/i;
-  if (threatRegex.test(message)) {
-    console.log('🔴 Regex Threat detected:', message);
+  if (threats.some(word => lowerMessage.includes(word))) {
+    console.log('🔴 Threat detected:', message);
     return res.status(403).json({ status: 'rejected threat' });
   }
 
