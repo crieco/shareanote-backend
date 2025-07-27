@@ -1,83 +1,65 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const Filter = require('bad-words');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const port = process.env.PORT || 10000;
+const Note = require('./note');
+const threats = require('./threatWords');
+const filter = new Filter();
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// MongoDB connection
-const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/shareanote';
-mongoose.connect(mongoURI, {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('✅ Connected to MongoDB');
-}).catch(err => {
-  console.error('❌ MongoDB connection error:', err);
-});
+  useUnifiedTopology: true,
+})
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+  });
 
-// Mongoose schema
-const noteSchema = new mongoose.Schema({
-  message: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const Note = mongoose.model('Note', noteSchema);
-
-// Filtering logic
-const filter = new Filter();
-const threatKeywords = ['kill', 'bomb', 'shoot', 'attack', 'threaten', 'explode'];
-
-function containsThreat(message) {
-  const lower = message.toLowerCase();
-  return threatKeywords.some(word => lower.includes(word));
-}
-
-// Routes
 app.post('/notes', async (req, res) => {
   const { message } = req.body;
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Invalid message format' });
-  }
+  if (!message) return res.status(400).json({ error: 'Message is required' });
+
+  const lowerMessage = message.toLowerCase();
 
   if (filter.isProfane(message)) {
-    return res.status(403).json({ error: 'rejected profanity' });
+    return res.status(403).json({ status: 'rejected profanity' });
   }
 
-  if (containsThreat(message)) {
-    return res.status(403).json({ error: 'rejected threat' });
+  if (threats.some(word => lowerMessage.includes(word))) {
+    return res.status(403).json({ status: 'rejected threat' });
   }
 
   try {
     const note = new Note({ message });
     await note.save();
-    res.status(201).json({ success: true });
+    res.json({ status: 'success' });
   } catch (err) {
-    console.error('Error saving note:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to save note' });
   }
 });
 
 app.get('/notes/random', async (req, res) => {
   try {
     const count = await Note.countDocuments();
-    if (count === 0) return res.json({ message: "No notes available." });
-
+    if (count === 0) return res.json({ message: '' });
     const random = Math.floor(Math.random() * count);
     const note = await Note.findOne().skip(random);
     res.json({ message: note.message });
   } catch (err) {
-    console.error('Error retrieving note:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to fetch note' });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server listening on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`✅ Server listening on port ${port}`);
 });
