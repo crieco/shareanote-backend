@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -12,12 +11,27 @@ const Note = require('./note');
 const threats = require('./threatWords');
 const filter = new Filter();
 
+// Add additional bad words
+filter.addWords(
+  'f***', 'f*ck', 'fuk', 'f u c k', 'fu*k',
+  'shit', 'sh*t', 's h i t',
+  'bitch', 'b*tch', 'b i t c h',
+  'kill', 'bomb', 'shoot', 'murder', 'explode'
+);
+
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI, {})
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+  });
 
 app.post('/notes', async (req, res) => {
   const { message } = req.body;
@@ -26,12 +40,13 @@ app.post('/notes', async (req, res) => {
   const lowerMessage = message.toLowerCase();
 
   if (filter.isProfane(message)) {
-    console.log('Blocked due to profanity:', message);
+    console.log('🔴 Profanity detected:', message);
     return res.status(403).json({ status: 'rejected profanity' });
   }
 
-  if (threats.some(word => lowerMessage.includes(word))) {
-    console.log('Blocked due to threat:', message);
+  const threatRegex = /\b(kill|bomb|explode|murder|shoot|stab|attack|terrorist|gun|violence)\b/i;
+  if (threatRegex.test(message)) {
+    console.log('🔴 Regex Threat detected:', message);
     return res.status(403).json({ status: 'rejected threat' });
   }
 
